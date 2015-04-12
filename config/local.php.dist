@@ -1,0 +1,40 @@
+<?php
+return array(
+    // Whether or not to enable a configuration cache.
+    // If enabled, the merged configuration will be cached and used in
+    // subsequent requests.
+    //'module_listener_options' => array(
+    //    'config_cache_enabled' => false,
+    //    // The key used to create the configuration cache file name.
+    //    'config_cache_key' => 'module_config_cache',
+    //    // The path in which to cache merged configuration.
+    //    'cache_dir' =>  './data/cache',
+    //    ...
+    // )
+    'db' => array(
+        'username' => '[USERNAME]',
+        'password' => '[PASSWORD]'
+    ),
+    'keyserver_client' => array(
+        'xheader' => 'x-stonemorapi',
+        'apikey' => '[API-KEY]',
+        'url' => '[API-SERVER-URL]',
+        'sslConfig' => array (
+            'useSsl' => false,      // true|false
+            'sslcapath' => '/etc/ssl/certs',
+            'sslverifypeer' => false,
+        ),
+        'endpoint' => 'roles',
+        'appname' => 'corpstruct'
+    ),
+    'service_manager' => array(
+        'factories' => array(
+            'Zend\Log' => function($sm) {
+                $log = new Zend\Log\Logger();
+                $writer = new Zend\Log\Writer\Stream('[PATH-TO-LOG-FILE]'); //change this to your local log directory
+                $log->addWriter($writer);
+                return $log;
+            }
+        )
+    )
+);
