@@ -1,5 +1,5 @@
 <?php
-namespace HttpClient;
+namespace KeyServerHttpClient;
 
 use Zend\Http\Client;
 use Zend\Http\Request;
@@ -10,23 +10,23 @@ use Zend\Session\Container as SessionContainer;
  * Class HttpClient
  * @package HttpClient
  */
-class HttpClient
+class KeyServerHttpClient
 {
     const STATUS_SUCCESS = 200;
-    var $config = '';
-    var $apiUrl = '';
-    var $xHeader = '';
-    var $apiKey = '';
-    var $roleAssignments  = '';
-    var $authSession  = '';
-    var $appLogger  = '';
+    public $config;
+    public $apiUrl;
+    public $xHeader;
+    public $apiKey;
+    public $authSession;
+    public $appLogger;
+    public $username;
 
     /**
      * @param $keyserver
-     * @param $roleAssignments
      * @param $appLogger
+     * @param $username
      */
-    public function __construct($keyserver, $roleAssignments, $appLogger)
+    public function __construct($keyserver, $appLogger, $username)
     {
         $this->appLogger   = $appLogger;
         $this->authSession = new SessionContainer('authSession'); //@todo possible refactor.  Do we always need to store in a session
@@ -35,12 +35,12 @@ class HttpClient
         $this->sslConfig   = $keyserver['sslConfig'];
         $this->apiUrl      = $keyserver['url'] . '/' .
                              $keyserver['endpoint'] . '/' .
-                             $_SERVER['PHP_AUTH_USER'] . '/' . // @todo refactor.  Should not rely on PHP_AUTH_USER being set
+                             $username . '/' .
                              $keyserver['appname'];
     }
 
     /**
-     * Get a list of roles for the user accessing a given applciation
+     * Get a list of roles for the user accessing a given application
      * @return mixed
      * @throws \Exception
      */

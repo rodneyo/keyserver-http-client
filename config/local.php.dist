@@ -11,10 +11,6 @@ return array(
     //    'cache_dir' =>  './data/cache',
     //    ...
     // )
-    'db' => array(
-        'username' => '[USERNAME]',
-        'password' => '[PASSWORD]'
-    ),
     'keyserver_client' => array(
         'xheader' => 'x-stonemorapi',
         'apikey' => '[API-KEY]',
@@ -25,7 +21,7 @@ return array(
             'sslverifypeer' => false,
         ),
         'endpoint' => 'roles',
-        'appname' => 'corpstruct'
+        'appname' => '[APP-NAME]'
     ),
     'service_manager' => array(
         'factories' => array(
