@@ -1,6 +1,6 @@
 {
     "name": "stonemor/HttpClient",
-    "description": "A standard http client utilizing the ZF2 Http\Client Http\Rest libraries. Used to call the keyserver API",
+    "description": "ZF2 Http client used to call the keyserver API",
     "keywords": [
         "stonemor",
         "keyserver",
