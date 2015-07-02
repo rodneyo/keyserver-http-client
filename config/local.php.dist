@@ -14,7 +14,7 @@ return array(
     'keyserver_client' => array(
         'xheader' => 'x-stonemorapi',
         'apikey' => '[API-KEY]',
-        'url' => '[API-SERVER-URL]',
+        'url' => 'https://|http://[API-SERVER-URL]',
         'sslConfig' => array (
             'useSsl' => false,      // true|false
             'sslcapath' => '/etc/ssl/certs',

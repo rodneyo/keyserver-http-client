@@ -12,7 +12,6 @@
         "zendframework/zendframework": "~2.4"
     },
     "require-dev": {
-        "zendframework/zftool": "dev-master",
         "phpunit/phpunit": "4.5.*"
     }
 }

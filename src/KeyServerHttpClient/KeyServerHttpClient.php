@@ -1,5 +1,5 @@
 <?php
-namespace KeyServerHttpClient;
+namespace KeyserverHttpClient;
 
 use Zend\Http\Client;
 use Zend\Http\Request;
@@ -10,16 +10,17 @@ use Zend\Session\Container as SessionContainer;
  * Class HttpClient
  * @package HttpClient
  */
-class KeyServerHttpClient
+class KeyserverHttpClient
 {
     const STATUS_SUCCESS = 200;
-    public $config;
     public $apiUrl;
     public $xHeader;
     public $apiKey;
-    public $authSession;
     public $appLogger;
     public $username;
+
+    protected $roles;
+    protected $locations;
 
     /**
      * @param $keyserver
@@ -29,60 +30,76 @@ class KeyServerHttpClient
     public function __construct($keyserver, $appLogger, $username)
     {
         $this->appLogger   = $appLogger;
-        $this->authSession = new SessionContainer('authSession'); //@todo possible refactor.  Do we always need to store in a session
         $this->xHeader     = $keyserver['xheader'];
         $this->apiKey      = $keyserver['apikey'];
         $this->sslConfig   = $keyserver['sslConfig'];
-        $this->apiUrl      = $keyserver['url'] . '/' .
-                             $keyserver['endpoint'] . '/' .
-                             $username . '/' .
-                             $keyserver['appname'];
+        $this->apiUrl      = $keyserver['url'] . '/';
+        $this->appName     = $keyserver['appname'];
+        $this->username    = $username;
     }
 
     /**
-     * Get a list of roles for the user accessing a given application
-     * @return mixed
+     * Call the keyserver api to get a list of roles a user is authorized to
+     * @return $this
      * @throws \Exception
      */
-    public function getRoles()
+    public function sendRolesAndLocationsRequest()
     {
-        if (empty($this->authSession->roles)) {
-            try {
-                $rolesData = $this->makeApiRequest();
-                $this->authSession->roles = serialize($rolesData);
+        $endPoint = 'roles/' . $this->username . '/' . $this->appName;
 
-            } catch (\Exception $e) {
-                $this->appLogger->crit($e);
-                $errorMessage = $e->getMessage();
-                throw new \Exception ($errorMessage);
+        try {
+            $data = $this->makeApiRequest($endPoint);
+
+            if (!array_key_exists('exception', $data)) {
+                $this->setRolesAndLocations($data);
             }
-
-        } else {
-            $rolesData = unserialize($this->authSession->roles);
+        } catch (\Exception $e) {
+            $this->appLogger->crit($e);
+            $errorMessage = $e->getMessage();
+            throw new \Exception ($errorMessage);
         }
 
-        if (!array_key_exists('exception', $rolesData)) {
-            foreach ($rolesData as $roles) {
-                if (array_key_exists('roles', $roles)) {
-                    return $roles['roles'];
-                }
+        return $this;
+    }
+
+    public function setRolesAndLocations($data)
+    {
+        foreach ($data as $item) {
+            if (array_key_exists('roles', $item)) {
+                $this->roles = $item['roles'];
             }
-        } else {
-            $errorMessage = print_r($rolesData, true);
-            throw new \Exception ($errorMessage); 
+            if (array_key_exists('locations', $item)) {
+                $this->locations = $item['locations'];
+            }
         }
     }
 
+    /**
+     * @return mixed
+     */
+    public function getRoles()
+    {
+        return $this->roles;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getLocations()
+    {
+        return $this->locations;
+    }
 
     /**
      * Call the keyserver API using
      * @return mixed
      * @throws \Exception
      */
-    public function makeApiRequest()
+    public function makeApiRequest($endPoint)
     {
         $request = new Request();
-        $request->setUri($this->apiUrl);
+        $request->setUri($this->apiUrl . $endPoint);
+
         $request->setMethod('GET');
         $requestHeaders = $request->getHeaders();
         $requestHeaders->addHeaderLine($this->xHeader, $this->apiKey);
@@ -94,6 +111,15 @@ class KeyServerHttpClient
         $client->setOptions($this->sslConfig);
 
         $response = $client->dispatch($request);
+        /**
+         * Weird bug in dev that outputs trash in content. only happens when running OdinCA locally
+         */
+        /**
+        $tmp = substr($response->getContent(), 3);
+        $tmp2 = substr($tmp, 0, -7);
+        $apiData = json_decode($tmp2, true);
+        //print_r($response->getContent()); exit;
+        /*** end weird bug ***/
         $apiData = json_decode($response->getContent(), true);
 
         if ($response->isOk()) {
@@ -102,10 +128,10 @@ class KeyServerHttpClient
             if (array_key_exists('exception', $apiData)) {
                 $errorMessage = $apiData['message'];
             } else {
-                $errorMessage = $response->getStatusCode() .'==>' . 
+                $errorMessage = $response->getStatusCode() .'==>' .
                                 $response->getReasonPhrase();
             }
-            throw new \Exception ($errorMessage); 
+            throw new \Exception ($errorMessage);
         }
 
     }
