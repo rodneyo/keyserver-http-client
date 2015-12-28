@@ -1,33 +1,56 @@
 <?php
+/**
+ *
+ * Date: 4/22/15
+ * Time: 1:30 PM
+ */
+
+$log_root = '/var/log/';
+$env = getenv('APPLICATION_ENV');
+
+$configs = array(
+    'host' => 'https://keyserver.stonemor.com',
+    'useSSL' => true,
+    'logFileLoc' => $log_root . 'webprod/wapscan2/keyserver_http_client.log',
+    'apikey' => '--KeyserverAPIKey--'
+);
+
+switch ($env)
+{
+    case 'testing':
+
+        $configs['host'] ='https://keyserver-test.stonemor.com';
+        $configs['logFileLoc'] = $log_root . 'webtest/wapscan2/keyserver_http_client.log';
+        break;
+
+    case 'development':
+
+        $configs['host'] = 'https://keyserver-test.stonemor.com';
+        $configs['useSSL'] = false;
+        $configs['logFileLoc'] = '/tmp/keyserver_http_client.log';
+        $configs['apikey'] = '--DevAPIKey--';
+        break;
+}
+
 return array(
-    // Whether or not to enable a configuration cache.
-    // If enabled, the merged configuration will be cached and used in
-    // subsequent requests.
-    //'module_listener_options' => array(
-    //    'config_cache_enabled' => false,
-    //    // The key used to create the configuration cache file name.
-    //    'config_cache_key' => 'module_config_cache',
-    //    // The path in which to cache merged configuration.
-    //    'cache_dir' =>  './data/cache',
-    //    ...
-    // )
     'keyserver_client' => array(
         'xheader' => 'x-stonemorapi',
-        'apikey' => '[API-KEY]',
-        'url' => 'https://|http://[API-SERVER-URL]',
+        'apikey' => $configs['apikey'],
+        'url' => $configs['host'],
         'sslConfig' => array (
-            'useSsl' => false,      // true|false
+            'useSsl' => $configs['useSSL'],      // true|false
             'sslcapath' => '/etc/ssl/certs',
             'sslverifypeer' => false,
         ),
+        'appname' => 'docscan2',
         'endpoint' => 'roles',
-        'appname' => '[APP-NAME]'
+        'optional_params' => '/locnames' // return location names from keyserver, required for Docscan
     ),
     'service_manager' => array(
         'factories' => array(
-            'KeyserverHttpClient\Log' => function($sm) {
+            'KeyserverHttpClient\Log' => function($sm) use($configs) {
                 $log = new Zend\Log\Logger();
-                $writer = new Zend\Log\Writer\Stream('[PATH-TO-LOG-FILE]'); //change this to your local log directory
+                $writer = new Zend\Log\Writer\Stream($configs['logFileLoc']); //change this to your local log directory
                 $log->addWriter($writer);
                 return $log;
             }

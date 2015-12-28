@@ -21,6 +21,7 @@ class KeyserverHttpClient
 
     protected $roles;
     protected $locations;
+    protected $locationNames;
 
     /**
      * @param $keyserver
@@ -29,13 +30,15 @@ class KeyserverHttpClient
      */
     public function __construct($keyserver, $appLogger, $username)
     {
-        $this->appLogger   = $appLogger;
-        $this->xHeader     = $keyserver['xheader'];
-        $this->apiKey      = $keyserver['apikey'];
-        $this->sslConfig   = $keyserver['sslConfig'];
-        $this->apiUrl      = $keyserver['url'] . '/';
-        $this->appName     = $keyserver['appname'];
-        $this->username    = $username;
+        $this->appLogger        = $appLogger;
+        $this->xHeader          = $keyserver['xheader'];
+        $this->apiKey           = $keyserver['apikey'];
+        $this->sslConfig        = $keyserver['sslConfig'];
+        $this->apiUrl           = $keyserver['url'] . '/';
+        $this->appName          = $keyserver['appname'];
+        $this->endPoint         = $keyserver['endpoint'];
+        $this->optionalParams   = $keyserver['optional_params'];
+        $this->username         = $username;
     }
 
     /**
@@ -45,7 +48,8 @@ class KeyserverHttpClient
      */
     public function sendRolesAndLocationsRequest()
     {
-        $endPoint = 'roles/' . $this->username . '/' . $this->appName;
+        $endPoint = $this->endPoint . '/'.  $this->username . '/' . $this->appName .
+            $this->optionalParams;
 
         try {
             $data = $this->makeApiRequest($endPoint);
@@ -54,27 +58,61 @@ class KeyserverHttpClient
                 $this->setRolesAndLocations($data);
             }
         } catch (\Exception $e) {
-            $this->appLogger->crit($e);
-            $errorMessage = $e->getMessage();
-            throw new \Exception ($errorMessage);
+            $this->appLogger->crit($e->getMessage());
+            throw new \Exception ($e->getMessage());
         }
 
         return $this;
     }
 
+    /**
+     * Set the roles and locations into class properties to
+     * make the accessible to other classes
+     *
+     * @param $data
+     *
+     * @throws \Exception
+     */
     public function setRolesAndLocations($data)
     {
         foreach ($data as $item) {
             if (array_key_exists('roles', $item)) {
+                if (count($item['roles']) <= 0) {
+                   throw new \Exception('no_roles');
+                }
                 $this->roles = $item['roles'];
             }
+
+
             if (array_key_exists('locations', $item)) {
-                $this->locations = $item['locations'];
+                if (count($item['locations']) <= 0) {
+                    throw new \Exception('no_locations');
+                }
+
+                //$this->locations = $item['locations'];
+                foreach ($item['locations'] as $location) {
+                    $this->locations[$location] = $location;
+                }
             }
+
+            if (array_key_exists('names', $item)) {
+                if (count($item['names']) <= 0) {
+                    throw new \Exception('no_location_names');
+                }
+
+                $this->locationNames = $item['names'];
+            }
+
+            /**
+            foreach ($locations as $key => $location) {
+                $this->locations[$location] = $locationNames[$key];
+            }
+            **/
+
         }
     }
 
-    /**
+        /**
      * @return mixed
      */
     public function getRoles()
@@ -88,6 +126,19 @@ class KeyserverHttpClient
     public function getLocations()
     {
         return $this->locations;
+    }
+
+    public function getLocationNumbers()
+    {
+        return array_keys($this->locations);
+    }
+
+    /**
+     * @return mixed
+    **/
+    public function getLocationNames()
+    {
+        return $this->locationNames;
     }
 
     /**
@@ -111,16 +162,7 @@ class KeyserverHttpClient
         $client->setOptions($this->sslConfig);
 
         $response = $client->dispatch($request);
-        /**
-         * Weird bug in dev that outputs trash in content. only happens when running OdinCA locally
-         */
-        /**
-        $tmp = substr($response->getContent(), 3);
-        $tmp2 = substr($tmp, 0, -7);
-        $apiData = json_decode($tmp2, true);
-        //print_r($response->getContent()); exit;
-        /*** end weird bug ***/
-        $apiData = json_decode($response->getContent(), true);
+        $apiData = json_decode($response->getBody(), true);
 
         if ($response->isOk()) {
             return $apiData;
