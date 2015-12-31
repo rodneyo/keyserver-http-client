@@ -8,6 +8,6 @@
     ],
     "homepage": "http://git.stonemor.com/Packages/KeyserverHttpClient.git",
     "require": {
-        "zendframework/skeleton-application": "~2.3"
+        "stonemor/zf2-skeleton-application": "dev-master"
     }
 }
