@@ -58,7 +58,7 @@ class KeyserverHttpClient
                 $this->setRolesAndLocations($data);
             }
         } catch (\Exception $e) {
-            $this->appLogger->crit($e->getMessage());
+            $this->appLogger->crit($this->username . '::' . $e->getMessage() . ' app name::' . $this->appName);
             throw new \Exception ($e->getMessage());
         }
 
@@ -102,13 +102,6 @@ class KeyserverHttpClient
 
                 $this->locationNames = $item['names'];
             }
-
-            /**
-            foreach ($locations as $key => $location) {
-                $this->locations[$location] = $locationNames[$key];
-            }
-            **/
-
         }
     }
 
